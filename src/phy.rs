@@ -12,7 +12,7 @@ pub struct WirelessPhy {
     pub driver: Option<String>,                // Driver information
     pub has_netlink: Option<bool>,             // If Interface has netlink
     pub active_monitor: Option<bool>,          // If Interface has netlink
-    pub frequency: Frequency,          // If Interface has netlink
+    pub frequency: Frequency,                  // If Interface has netlink
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -37,18 +37,22 @@ impl Default for Frequency {
 impl Frequency {
     pub fn print(&self) -> String {
         if let Some(freq) = self.frequency {
-            format!("{} ({})", freq, if let Some(chan) = self.channel {
-                chan.to_string()
-            } else {
-                "Unknown".to_string()
-            })
+            format!(
+                "{} ({})",
+                freq,
+                if let Some(chan) = self.channel {
+                    chan.to_string()
+                } else {
+                    "Unknown".to_string()
+                }
+            )
         } else {
             "None".to_string()
         }
     }
 }
 
-pub fn iftypes_to_string_list(iftypes: &Vec<Nl80211Iftype>) -> String {
+pub fn iftypes_to_string_list(iftypes: &[Nl80211Iftype]) -> String {
     iftypes
         .iter()
         .map(|iftype| iftype.string())

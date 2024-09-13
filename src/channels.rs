@@ -1,18 +1,12 @@
 pub fn map_str_to_band_and_channel(channel_str: &str) -> Option<(WiFiBand, u32)> {
-    if channel_str.ends_with(".6e") {
-        channel_str[..channel_str.len() - 3]
-            .parse::<u32>()
-            .ok()
-            .map(|ch| (WiFiBand::Band6GHz, ch))
-    } else if channel_str.ends_with(".ay") {
-        channel_str[..channel_str.len() - 3]
-            .parse::<u32>()
-            .ok()
-            .map(|ch| (WiFiBand::Band60GHz, ch))
+    if let Some(str) = channel_str.strip_suffix(".6e") {
+        str.parse::<u32>().ok().map(|ch| (WiFiBand::Band6GHz, ch))
+    } else if let Some(str) = channel_str.strip_suffix(".ay") {
+        str.parse::<u32>().ok().map(|ch| (WiFiBand::Band60GHz, ch))
     } else {
         match channel_str.parse::<u32>() {
             Ok(ch) => {
-                if ch >= 1 && ch <= 14 {
+                if (1..=14).contains(&ch) {
                     Some((WiFiBand::Band2GHz, ch))
                 } else if ch >= 14 {
                     Some((WiFiBand::Band5GHz, ch))
@@ -93,7 +87,10 @@ impl Default for BandList {
 pub fn pretty_print_band_lists(band_lists: &[BandList], width: usize) -> String {
     let mut output = String::new();
     for band_list in band_lists {
-        if band_list.channels.iter().any(|channel| channel.status == FrequencyStatus::Enabled)
+        if band_list
+            .channels
+            .iter()
+            .any(|channel| channel.status == FrequencyStatus::Enabled)
         {
             output += &format!("{:?}:\n  ", band_list.band);
             let mut line = String::new();
@@ -105,7 +102,7 @@ pub fn pretty_print_band_lists(band_lists: &[BandList], width: usize) -> String 
                         WiFiBand::Band5GHz => format!("{}", channel.channel),
                         WiFiBand::Band60GHz => format!("{}.ay", channel.channel),
                         WiFiBand::Band6GHz => format!("{}.6e", channel.channel),
-                        WiFiBand::Unknown => format!("Unknown"),
+                        WiFiBand::Unknown => "Unknown".to_string(),
                     };
                     let chanline = format!("[{} ({})]", channel.frequency, channel_str);
                     line += &format!("{:<17}", chanline);
@@ -133,19 +130,15 @@ pub enum FrequencyStatus {
 }
 
 pub fn chan_to_frequency(chan: u32, band: WiFiBand) -> u32 {
-    if chan <= 0 {
+    if chan == 0 {
         return 0; // not supported
     }
 
     match band {
-        WiFiBand::Band2GHz => {
-            if chan == 14 {
-                2484
-            } else if chan < 14 {
-                2407 + chan * 5
-            } else {
-                0 // not supported
-            }
+        WiFiBand::Band2GHz => match chan {
+            1..14 => 2407 + chan * 5,
+            14 => 2484,
+            _ => 0,
         },
         WiFiBand::Band5GHz => {
             if (182..=196).contains(&chan) {
@@ -153,7 +146,7 @@ pub fn chan_to_frequency(chan: u32, band: WiFiBand) -> u32 {
             } else {
                 5000 + chan * 5
             }
-        },
+        }
         WiFiBand::Band6GHz => {
             if chan == 2 {
                 5935
@@ -162,14 +155,14 @@ pub fn chan_to_frequency(chan: u32, band: WiFiBand) -> u32 {
             } else {
                 0 // not supported
             }
-        },
+        }
         WiFiBand::Band60GHz => {
             if chan < 7 {
                 56160 + chan * 2160
             } else {
                 0 // not supported
             }
-        },
+        }
         WiFiBand::Unknown => 0,
     }
 }
@@ -179,19 +172,26 @@ pub fn chan_from_frequency(freq: u32) -> u32 {
         return 0; // Not supported
     }
 
-    if freq == 2484 { // Band2Ghz
+    if freq == 2484 {
+        // Band2Ghz
         14
-    } else if freq == 5935 { // Band6Ghz
+    } else if freq == 5935 {
+        // Band6Ghz
         2
-    } else if freq < 2484 { // Band2Ghz
-       (freq - 2407) / 5
-    } else if (4910..=4980).contains(&freq) { //Band5Ghz
+    } else if freq < 2484 {
+        // Band2Ghz
+        (freq - 2407) / 5
+    } else if (4910..=4980).contains(&freq) {
+        //Band5Ghz
         (freq - 4000) / 5
-    } else if freq < 5950 { //Band5Ghz or Band6Ghz !!! SEPERATE THESE
+    } else if freq < 5950 {
+        //Band5Ghz or Band6Ghz !!! SEPERATE THESE
         (freq - 5000) / 5
-    } else if freq <= 45000 { //Band60Ghz
+    } else if freq <= 45000 {
+        //Band60Ghz
         (freq - 5950) / 5
-    } else if (58320..=70200).contains(&freq) { //Band60Ghz
+    } else if (58320..=70200).contains(&freq) {
+        //Band60Ghz
         (freq - 56160) / 2160
     } else {
         0 // Not supported
@@ -207,18 +207,13 @@ pub fn freq_to_band(freq: u32) -> WiFiBand {
         WiFiBand::Band6GHz
     } else if freq < 2484 {
         WiFiBand::Band2GHz
-    } else if (4910..=4980).contains(&freq) {
-        WiFiBand::Band5GHz
-    } else if (5150..=5925).contains(&freq) {
+    } else if (4910..=4980).contains(&freq) || (5150..=5925).contains(&freq) {
         WiFiBand::Band5GHz
     } else if (5925..=7125).contains(&freq) {
         WiFiBand::Band6GHz
-    } else if freq <= 45000 {
-        WiFiBand::Band60GHz
-    } else if (58320..=70200).contains(&freq) {
+    } else if freq <= 45000 || (58320..=70200).contains(&freq) {
         WiFiBand::Band60GHz
     } else {
         WiFiBand::Unknown
     }
 }
-

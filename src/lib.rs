@@ -187,7 +187,7 @@ fn get_interfaces_info() -> Result<HashMap<u32, Interface>, String> {
     for (phy, interface) in &mut interfaces {
         if wiphys.contains_key(phy) {
             if let Some(index) = interface.index {
-                interface.phy = wiphys.get(&phy).cloned();
+                interface.phy = wiphys.get(phy).cloned();
                 interface.state = Some(rt_socket.get_interface_status(index)?);
             }
         }
