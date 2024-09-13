@@ -36,7 +36,8 @@ impl Nl80211 {
         let mut rt_socket: RtSocket = RtSocket::connect()?;
 
         let wirelessphys: HashMap<u32, phy::WirelessPhy> = nt_socket.cmd_get_all_wiphy()?;
-        let mut interfaces: HashMap<u32, Interface> = nt_socket.cmd_get_interfaces()?;
+        let mut interfaces: HashMap<u32, Interface> =
+            nt_socket.cmd_get_interfaces().map_err(|e| e.to_string())?;
 
         for (phy, interface) in &mut interfaces {
             if wirelessphys.contains_key(phy) {
@@ -58,7 +59,10 @@ impl Nl80211 {
     /// Updates the interfaces and Wiphy lists of the struct.
     fn update_interfaces(&mut self) -> Result<(), String> {
         let wirelessphys: HashMap<u32, phy::WirelessPhy> = self.nt_socket.cmd_get_all_wiphy()?;
-        let mut interfaces: HashMap<u32, Interface> = self.nt_socket.cmd_get_interfaces()?;
+        let mut interfaces: HashMap<u32, Interface> = self
+            .nt_socket
+            .cmd_get_interfaces()
+            .map_err(|e| e.to_string())?;
 
         for (phy, interface) in &mut interfaces {
             if wirelessphys.contains_key(phy) {
@@ -81,7 +85,10 @@ impl Nl80211 {
     }
 
     pub fn interface(&self, idx: u32) -> Option<Interface> {
-        self.interfaces.values().find(|f| f.index == Some(idx)).cloned()
+        self.interfaces
+            .values()
+            .find(|f| f.index == Some(idx))
+            .cloned()
     }
 
     pub fn get_interfaces(&self) -> &HashMap<u32, Interface> {
@@ -118,7 +125,7 @@ impl Nl80211 {
         let band = WiFiBand::from_u8(band)?;
         self.nt_socket.set_frequency(
             index,
-                chan_to_frequency(channel, band),
+            chan_to_frequency(channel, band),
             Nl80211ChanWidth::ChanWidth20Noht,
             Nl80211ChannelType::ChanNoHt,
         )?;
@@ -127,9 +134,7 @@ impl Nl80211 {
     }
 
     pub fn set_powersave_off(&mut self, index: u32) -> Result<(), String> {
-        self.nt_socket.set_powersave_off(
-            index,
-        )?;
+        self.nt_socket.set_powersave_off(index)?;
         self.update_interfaces()?;
         Ok(())
     }
@@ -174,7 +179,10 @@ fn get_interfaces_info() -> Result<HashMap<u32, Interface>, String> {
     let mut rt_socket: RtSocket = RtSocket::connect()?;
 
     let wiphys: HashMap<u32, phy::WirelessPhy> = nt_socket.cmd_get_all_wiphy()?;
-    let mut interfaces: HashMap<u32, Interface> = nt_socket.cmd_get_interfaces()?;
+    let mut interfaces: HashMap<u32, Interface> = match nt_socket.cmd_get_interfaces() {
+        Ok(it) => it,
+        Err(err) => return Err(err.to_string()),
+    };
 
     for (phy, interface) in &mut interfaces {
         if wiphys.contains_key(phy) {
@@ -192,7 +200,8 @@ pub fn get_interface_info_idx(interface_index: u32) -> Result<Interface, String>
     let mut rt_socket: RtSocket = RtSocket::connect()?;
 
     let wiphys: HashMap<u32, phy::WirelessPhy> = nt_socket.cmd_get_all_wiphy()?;
-    let mut interfaces: HashMap<u32, Interface> = nt_socket.cmd_get_interfaces()?;
+    let mut interfaces: HashMap<u32, Interface> =
+        nt_socket.cmd_get_interfaces().map_err(|e| e.to_string())?;
 
     for (phy, interface) in &mut interfaces {
         if let Some(index) = interface.index {
@@ -213,7 +222,8 @@ pub fn get_interface_info_name(interface_name: &String) -> Result<Interface, Str
     let mut rt_socket: RtSocket = RtSocket::connect()?;
 
     let wiphys: HashMap<u32, phy::WirelessPhy> = nt_socket.cmd_get_all_wiphy()?;
-    let mut interfaces: HashMap<u32, Interface> = nt_socket.cmd_get_interfaces()?;
+    let mut interfaces: HashMap<u32, Interface> =
+        nt_socket.cmd_get_interfaces().map_err(|e| e.to_string())?;
 
     for (phy, interface) in &mut interfaces {
         if let Some(index) = interface.index {
@@ -257,9 +267,7 @@ pub fn set_interface_chan(interface_index: u32, channel: u32, band: u8) -> Resul
 
 pub fn set_powersave_off(index: u32) -> Result<(), String> {
     let mut nt_socket = NtSocket::connect()?;
-    nt_socket.set_powersave_off(
-        index,
-    )?;
+    nt_socket.set_powersave_off(index)?;
     Ok(())
 }
 
