@@ -136,7 +136,7 @@ pub fn chan_to_frequency(chan: u32, band: WiFiBand) -> u32 {
 
     match band {
         WiFiBand::Band2GHz => match chan {
-            1..14 => 2407 + chan * 5,
+            1..=13 => 2407 + chan * 5,
             14 => 2484,
             _ => 0,
         },
